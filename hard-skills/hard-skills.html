@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>UX/UI Hard Skills</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+    .container { display: flex; flex-direction: column; height: 100vh; }
+    .header { display: flex; align-items: center; justify-content: center; padding: 10px 20px; position: relative; }
+    .header h1 { font-size: 18px; font-weight: 700; color: #1f2937; cursor: pointer; }
+    .header p { font-size: 12px; color: #6b7280; margin-top: 3px; }
+    .header-right { position: absolute; right: 20px; display: flex; gap: 10px; align-items: center; }
+    .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #555; transition: all 0.15s; }
+    .btn:hover { background: #f3f4f6; }
+    .btn.active { border: none; background: #374151; color: #fff; }
+    .main { flex: 1; display: flex; position: relative; overflow: hidden; }
+    .chart-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+    .panel { position: absolute; right: 16px; top: 16px; width: 240px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 16px; z-index: 10; max-height: calc(100% - 32px); overflow-y: auto; }
+    .panel h2 { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+    .panel .tag { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-bottom: 8px; }
+    .panel .tag.core { background: #374151; color: #fff; }
+    .panel .tag.supporting { background: #f3f4f6; color: #666; border: 1px dashed #aaa; }
+    .panel .desc { color: #4b5563; font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .panel .self-box { background: #f0f9ff; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .panel .prog { border-top: 1px solid #e5e7eb; padding-top: 12px; }
+    .panel .prog h3 { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+    .panel .prog-bar { display: flex; gap: 2px; }
+    .panel .prog-bar div { flex: 1; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; font-weight: 700; color: #374151; transition: transform 0.1s; }
+    .panel .prog-bar div:hover { transform: scale(1.08); }
+    .footer { background: rgba(255,255,255,0.95); border-top: 1px solid #e5e7eb; padding: 10px 16px; }
+    .footer-inner { display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap; }
+    .legend-btn { display: flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 6px; cursor: pointer; border: 1px solid #e5e7eb; background: #fff; font-size: 12px; transition: all 0.15s; }
+    .legend-btn:hover { background: #f9fafb; }
+    .legend-btn.active { border: 2px solid #374151; background: #f3f4f6; }
+    .legend-btn .box { width: 18px; height: 18px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: #374151; }
+    .copyright { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 6px; }
+    [data-tip] { position: relative; }
+    [data-tip]:hover::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: #1f2937; color: #fff; padding: 8px 12px; border-radius: 8px; font-size: 12px; white-space: normal; width: max-content; max-width: 260px; z-index: 100; margin-bottom: 8px; text-align: center; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div style="text-align:center">
+        <h1 id="title" onclick="resetAll()">UX/UI Hard Skills</h1>
+        <p id="subtitle">Laszlo Hadhazi's Hard Skill Self-Assessment Matrix</p>
+      </div>
+      <div class="header-right">
+        <button class="btn active" id="btnLevels" onclick="setToggle('levels')">Levels</button>
+        <button class="btn" id="btnSelf" onclick="setToggle('self')">Self Assessment</button>
+        <button class="btn" onclick="toggleFullscreen()" title="Fullscreen">⛶</button>
+      </div>
+    </div>
+    <div class="main">
+      <div class="chart-wrap">
+        <svg id="chart"></svg>
+      </div>
+      <div class="panel" id="panel">
+        <h2 id="panelTitle">Select a skill</h2>
+        <div id="panelContent"><p style="color:#9ca3af;font-size:13px">Click any skill to see details.</p></div>
+      </div>
+    </div>
+    <div class="footer">
+      <div class="footer-inner" id="legendBar"></div>
+      <p class="copyright">© Mehmet Ergene • ergene@gmail.com</p>
+    </div>
+  </div>
+
+  <script>
+    // DEFAULT DATA
+    var DATA = {
+      settings: {
+        title: "UX/UI Hard Skills",
+        subtitle: "Laszlo Hadhazi's Hard Skill Self-Assessment Matrix"
+      },
+      levels: [
+        { level: 1, color: "O", name: "Base", description: "I understand what it is, no practical experience" },
+        { level: 2, color: "Y", name: "Junior", description: "I have tried it" },
+        { level: 3, color: "Y", name: "Junior+", description: "Applied it to several projects, still learning" },
+        { level: 4, color: "R", name: "Intermediate", description: "Confident, some experience, still need practice" },
+        { level: 5, color: "R", name: "Intermediate+", description: "Confident on approach and reasonably practised" },
+        { level: 6, color: "B", name: "Senior", description: "A good understanding, used often" },
+        { level: 7, color: "G", name: "Lead", description: "Very good and confident" },
+        { level: 8, color: "G", name: "Lead+", description: "Expert - totally confident, complete understanding" }
+      ],
+      skills: {
+        core: [
+          { name: "UX strategy & planning", explanation: "Structuring the UX approach end-to-end: scope, research plan, priorities, and alignment to business goals.", colors: ["O","Y","Y","R","R","B","G","G"], selfAssessment: 3 },
+          { name: "Information architecture", explanation: "Organizing content and navigation so users can find what they need and complete goals efficiently.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 5 },
+          { name: "User flows", explanation: "Mapping user paths, decisions, edge cases, and failures to design clear journeys and reduce friction.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 6 },
+          { name: "Communication", explanation: "Explaining your work clearly, showing rationale, and tailoring the narrative to stakeholders and decisions.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 7 },
+          { name: "Wireframing", explanation: "Building low-fi structure + prototypes to validate behavior early and reduce risk before high-fi/build.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 6 },
+          { name: "UI design", explanation: "High-fidelity UI craft: layout, hierarchy, components, states, and developer-ready screen design.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 5 },
+          { name: "Interaction design", explanation: "Defining how UI behaves: feedback, transitions, micro-interactions, error handling, system response.", colors: ["O","Y","Y","Y","R","B","G","G"], selfAssessment: 6 },
+          { name: "Empathy", explanation: "Understanding user context deeply (feel/think/do) and turning it into respectful, effective design choices.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 6 },
+          { name: "Qualitative research", explanation: "Interviews and usability testing to uncover pain points, motivations, mental models, and usability issues.", colors: ["O","Y","Y","R","R","B","G","G"], selfAssessment: 6 },
+          { name: "Analysis", explanation: "Synthesizing findings into insights and decisions, defining success metrics, and evaluating outcomes.", colors: ["O","Y","Y","R","R","B","G","G"], selfAssessment: 4 },
+          { name: "UX leadership", explanation: "Raising quality through coaching, standards, alignment, and influence; guiding direction across workstreams.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 3 }
+        ],
+        supporting: [
+          { name: "UX writing", explanation: "Writing clear, instructional microcopy aligned with brand tone to reduce confusion and errors.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 3 },
+          { name: "Branding", explanation: "Applying brand identity across UI and messaging to build consistency, trust, and recognition.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 4 },
+          { name: "Workshop facilitation", explanation: "Running structured workshops to align teams and generate decisions, priorities, and shared ownership.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 5 },
+          { name: "Design thinking", explanation: "Using iterative cycles (empathize, define, ideate, prototype, test) to solve complex problems.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 3 },
+          { name: "Agile", explanation: "Working effectively in sprints and iterative delivery with PM/engineering: planning, alignment, follow-through.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 3 },
+          { name: "Quantitative research", explanation: "Using surveys and behavioral data to validate patterns, compare segments, and measure impact at scale.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 2 },
+          { name: "UX audits", explanation: "Evaluating UX using heuristics/patterns to identify issues, prioritize fixes, and improve quality quickly.", colors: ["O","Y","Y","R","B","G","G","G"], selfAssessment: 5 }
+        ]
+      }
+    };
+
+    var COLORS = { O: "#F5A962", Y: "#F9DC8C", R: "#E8A0A0", B: "#A8C8E8", G: "#7CB9A0" };
+    
+    var state = {
+      selected: null,
+      selectedLevel: null,
+      toggle: "levels",
+      highlight: null,
+      groupFilter: null
+    };
+
+    var allSkills = [];
+    var coreCount = 0;
+
+    function init() {
+      fetch("skills-data.json")
+        .then(function(r) { 
+          if (!r.ok) throw new Error("not found");
+          return r.json(); 
+        })
+        .then(function(json) { 
+          console.log("Loaded JSON:", json);
+          console.log("Core skills:", json.skills.core.length);
+          console.log("Supporting skills:", json.skills.supporting.length);
+          DATA = json; 
+          render(); 
+        })
+        .catch(function(e) { 
+          console.log("Using default data:", e);
+          render(); 
+        });
+    }
+
+    function render() {
+      document.getElementById("title").textContent = DATA.settings.title || "Skill Assessment Matrix";
+      document.getElementById("subtitle").textContent = DATA.settings.subtitle || "";
+
+      allSkills = [];
+      var core = DATA.skills.core || [];
+      var support = DATA.skills.supporting || [];
+      coreCount = core.length;
+      
+      console.log("Building skills - Core:", coreCount, "Supporting:", support.length);
+      
+      for (var i = 0; i < core.length; i++) {
+        var s = core[i];
+        allSkills.push({ 
+          name: s.name, 
+          explanation: s.explanation, 
+          colors: s.colors, 
+          selfAssessment: s.selfAssessment, 
+          group: "Core", 
+          idx: i 
+        });
+      }
+      for (var j = 0; j < support.length; j++) {
+        var t = support[j];
+        allSkills.push({ 
+          name: t.name, 
+          explanation: t.explanation, 
+          colors: t.colors, 
+          selfAssessment: t.selfAssessment, 
+          group: "Supporting", 
+          idx: coreCount + j 
+        });
+      }
+
+      console.log("Total skills:", allSkills.length);
+
+      renderChart();
+      renderLegend();
+      updatePanel();
+    }
+
+    function renderChart() {
+      var wrap = document.querySelector(".chart-wrap");
+      var wrapH = wrap.clientHeight;
+      var wrapW = wrap.clientWidth;
+      
+      // MUCH LARGER CHART - 1.5x increase
+      var maxSize = Math.min(wrapH - 40, wrapW - 280);
+      var size = Math.min(maxSize, 900); // Allow up to 900px
+
+      var svg = document.getElementById("chart");
+      svg.setAttribute("width", size);
+      svg.setAttribute("height", size);
+      svg.setAttribute("viewBox", "0 0 800 800");
+      svg.innerHTML = "";
+
+      var cx = 400, cy = 400;
+      var innerR = 55, outerR = 320; // Larger outer radius
+      var ringW = (outerR - innerR) / 8;
+      var gap = 0.02, secGap = 0.12; // More gap for readability
+      var total = allSkills.length;
+      
+      if (total === 0) {
+        console.log("No skills to render");
+        return;
+      }
+
+      var totalAng = 2 * Math.PI - 2 * secGap;
+      var coreAng = (coreCount / total) * totalAng;
+      var supAng = ((total - coreCount) / total) * totalAng;
+      var startAng = -Math.PI;
+
+      var angles = [];
+      for (var i = 0; i < coreCount; i++) {
+        var a = coreAng / coreCount;
+        angles.push({ start: startAng + i * a + gap/2, end: startAng + (i+1) * a - gap/2 });
+      }
+      var supStart = startAng + coreAng + secGap;
+      for (var j = 0; j < total - coreCount; j++) {
+        var b = supAng / (total - coreCount);
+        angles.push({ start: supStart + j * b + gap/2, end: supStart + (j+1) * b - gap/2 });
+      }
+
+      function arc(s, e, ri, ro) {
+        var lg = e - s > Math.PI ? 1 : 0;
+        return "M" + (cx + ri * Math.cos(s)) + " " + (cy + ri * Math.sin(s)) +
+               " A" + ri + " " + ri + " 0 " + lg + " 1 " + (cx + ri * Math.cos(e)) + " " + (cy + ri * Math.sin(e)) +
+               " L" + (cx + ro * Math.cos(e)) + " " + (cy + ro * Math.sin(e)) +
+               " A" + ro + " " + ro + " 0 " + lg + " 0 " + (cx + ro * Math.cos(s)) + " " + (cy + ro * Math.sin(s)) + " Z";
+      }
+
+      // Background rings
+      if (state.toggle === "levels") {
+        for (var r = 0; r < 8; r++) {
+          var circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          circle.setAttribute("cx", cx);
+          circle.setAttribute("cy", cy);
+          circle.setAttribute("r", innerR + (r + 1) * ringW);
+          circle.setAttribute("fill", "none");
+          circle.setAttribute("stroke", "#cbd5e1");
+          circle.setAttribute("stroke-width", "0.5");
+          circle.setAttribute("stroke-dasharray", "3 5");
+          svg.appendChild(circle);
+        }
+      }
+
+      // Section backgrounds
+      if (coreCount > 0 && angles.length >= coreCount) {
+        var coreBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        coreBg.setAttribute("d", arc(angles[0].start - 0.03, angles[coreCount - 1].end + 0.03, innerR - 6, outerR + 6));
+        coreBg.setAttribute("fill", "rgba(55,65,81,0.02)");
+        coreBg.setAttribute("stroke", "rgba(55,65,81,0.06)");
+        coreBg.setAttribute("stroke-width", "1");
+        coreBg.setAttribute("opacity", state.groupFilter === "Supporting" ? 0.2 : 1);
+        svg.appendChild(coreBg);
+      }
+      if (total > coreCount && angles.length >= total) {
+        var supBg = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        supBg.setAttribute("d", arc(angles[coreCount].start - 0.03, angles[total - 1].end + 0.03, innerR - 6, outerR + 6));
+        supBg.setAttribute("fill", "rgba(156,163,175,0.01)");
+        supBg.setAttribute("stroke", "rgba(156,163,175,0.06)");
+        supBg.setAttribute("stroke-width", "1");
+        supBg.setAttribute("stroke-dasharray", "4 3");
+        supBg.setAttribute("opacity", state.groupFilter === "Core" ? 0.2 : 1);
+        svg.appendChild(supBg);
+      }
+
+      // Skills
+      for (var idx = 0; idx < allSkills.length; idx++) {
+        var sk = allSkills[idx];
+        var ang = angles[idx];
+        if (!ang) continue;
+        
+        var mid = (ang.start + ang.end) / 2;
+        var isActive = state.selected === idx;
+        var selGroup = state.selected !== null ? allSkills[state.selected].group : null;
+
+        var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        g.style.cursor = "pointer";
+        (function(capturedIdx) {
+          g.onclick = function() { 
+            state.selected = state.selected === capturedIdx ? null : capturedIdx; 
+            state.selectedLevel = null; 
+            renderChart(); 
+            updatePanel(); 
+          };
+        })(idx);
+
+        // Rings
+        for (var ri = 0; ri < sk.colors.length; ri++) {
+          var c = sk.colors[ri];
+          var op = getOpacity(sk, c, selGroup);
+          var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", arc(ang.start, ang.end, innerR + ri * ringW, innerR + (ri + 1) * ringW));
+          path.setAttribute("fill", COLORS[c]);
+          path.setAttribute("stroke", isActive ? "rgba(71,85,105,0.5)" : "#fff");
+          path.setAttribute("stroke-width", isActive ? 1.5 : 0.5);
+          path.setAttribute("opacity", op);
+          path.style.transition = "opacity 0.2s";
+          g.appendChild(path);
+        }
+
+        // Level numbers when selected
+        if (state.toggle === "levels" && isActive) {
+          for (var li = 0; li < sk.colors.length; li++) {
+            var rr = innerR + (li + 0.5) * ringW;
+            var txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+            txt.setAttribute("x", cx + rr * Math.cos(mid));
+            txt.setAttribute("y", cy + rr * Math.sin(mid));
+            txt.setAttribute("text-anchor", "middle");
+            txt.setAttribute("dominant-baseline", "middle");
+            txt.setAttribute("font-size", "11");
+            txt.setAttribute("font-weight", "bold");
+            txt.setAttribute("fill", "#374151");
+            txt.textContent = li + 1;
+            g.appendChild(txt);
+          }
+        }
+
+        // Self assessment dot
+        if (state.toggle === "self" && sk.selfAssessment > 0) {
+          var dotR = innerR + (sk.selfAssessment - 0.5) * ringW;
+          var dotX = cx + dotR * Math.cos(mid);
+          var dotY = cy + dotR * Math.sin(mid);
+          var dotOp = getLabelOpacity(sk, selGroup);
+          
+          var dot = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          dot.setAttribute("cx", dotX);
+          dot.setAttribute("cy", dotY);
+          dot.setAttribute("r", 10);
+          dot.setAttribute("fill", "#1f2937");
+          dot.setAttribute("stroke", "#fff");
+          dot.setAttribute("stroke-width", "2");
+          dot.setAttribute("opacity", dotOp);
+          g.appendChild(dot);
+
+          var dotTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          dotTxt.setAttribute("x", dotX);
+          dotTxt.setAttribute("y", dotY);
+          dotTxt.setAttribute("text-anchor", "middle");
+          dotTxt.setAttribute("dominant-baseline", "middle");
+          dotTxt.setAttribute("font-size", "10");
+          dotTxt.setAttribute("font-weight", "bold");
+          dotTxt.setAttribute("fill", "#fff");
+          dotTxt.setAttribute("opacity", dotOp);
+          dotTxt.textContent = sk.selfAssessment;
+          g.appendChild(dotTxt);
+        }
+
+        // Label - LARGER TEXT
+        var labelR = outerR + 18;
+        var lx = cx + labelR * Math.cos(mid);
+        var ly = cy + labelR * Math.sin(mid);
+        var deg = mid * 180 / Math.PI;
+        var isRight = deg > -90 && deg < 90;
+        var rot = isRight ? deg : deg + 180;
+        var anchor = isRight ? "start" : "end";
+
+        var words = sk.name.split(" ");
+        var lines;
+        if (words.length <= 2) {
+          lines = [sk.name];
+        } else {
+          lines = [words.slice(0, Math.ceil(words.length/2)).join(" "), words.slice(Math.ceil(words.length/2)).join(" ")];
+        }
+        var labelOp = getLabelOpacity(sk, selGroup);
+
+        var labelG = document.createElementNS("http://www.w3.org/2000/svg", "g");
+        labelG.setAttribute("transform", "translate(" + lx + "," + ly + ") rotate(" + rot + ")");
+        labelG.setAttribute("opacity", labelOp);
+        labelG.style.transition = "opacity 0.2s";
+
+        for (var lineIdx = 0; lineIdx < lines.length; lineIdx++) {
+          var lt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+          lt.setAttribute("x", 0);
+          lt.setAttribute("y", lineIdx * 14 - (lines.length - 1) * 7);
+          lt.setAttribute("text-anchor", anchor);
+          lt.setAttribute("dominant-baseline", "middle");
+          lt.setAttribute("font-size", "10"); // LARGER
+          lt.setAttribute("font-weight", isActive ? "700" : "500");
+          lt.setAttribute("fill", isActive ? "#1f2937" : (sk.group === "Core" ? "#374151" : "#6b7280"));
+          if (sk.group === "Supporting") lt.setAttribute("font-style", "italic");
+          lt.textContent = lines[lineIdx];
+          labelG.appendChild(lt);
+        }
+        g.appendChild(labelG);
+
+        svg.appendChild(g);
+      }
+
+      // Center hub
+      var center = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+      center.setAttribute("cx", cx);
+      center.setAttribute("cy", cy);
+      center.setAttribute("r", innerR);
+      center.setAttribute("fill", "#2d4a5e");
+      center.setAttribute("stroke", "#1f3544");
+      center.setAttribute("stroke-width", "3");
+      svg.appendChild(center);
+
+      var centerTexts = [
+        { text: "UX", y: -8, size: 14, weight: "bold" },
+        { text: "SKILLS", y: 6, size: 8, weight: "600" },
+        { text: "MATRIX", y: 16, size: 8, weight: "600" }
+      ];
+      for (var ct = 0; ct < centerTexts.length; ct++) {
+        var item = centerTexts[ct];
+        var cTxt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+        cTxt.setAttribute("x", cx);
+        cTxt.setAttribute("y", cy + item.y);
+        cTxt.setAttribute("text-anchor", "middle");
+        cTxt.setAttribute("fill", "#fff");
+        cTxt.setAttribute("font-size", item.size);
+        cTxt.setAttribute("font-weight", item.weight);
+        cTxt.textContent = item.text;
+        svg.appendChild(cTxt);
+      }
+
+      // Section labels - LARGER
+      var coreLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      coreLabel.setAttribute("x", cx - 240);
+      coreLabel.setAttribute("y", cy - 360);
+      coreLabel.setAttribute("text-anchor", "middle");
+      coreLabel.setAttribute("fill", "#374151");
+      coreLabel.setAttribute("font-size", "13");
+      coreLabel.setAttribute("font-weight", "700");
+      coreLabel.setAttribute("letter-spacing", "2");
+      coreLabel.setAttribute("opacity", state.groupFilter === "Supporting" ? 0.2 : 1);
+      coreLabel.textContent = "CORE";
+      svg.appendChild(coreLabel);
+
+      var supLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      supLabel.setAttribute("x", cx + 240);
+      supLabel.setAttribute("y", cy + 375);
+      supLabel.setAttribute("text-anchor", "middle");
+      supLabel.setAttribute("fill", "#9ca3af");
+      supLabel.setAttribute("font-size", "13");
+      supLabel.setAttribute("font-weight", "600");
+      supLabel.setAttribute("font-style", "italic");
+      supLabel.setAttribute("letter-spacing", "2");
+      supLabel.setAttribute("opacity", state.groupFilter === "Core" ? 0.2 : 1);
+      supLabel.textContent = "SUPPORTING";
+      svg.appendChild(supLabel);
+    }
+
+    function getOpacity(sk, col, selGroup) {
+      if (state.highlight) return col === state.highlight ? 1 : 0.2;
+      if (state.groupFilter && sk.group !== state.groupFilter) return 0.15;
+      if (state.selected === null) return sk.group === "Core" ? 0.95 : 0.85;
+      if (state.selected === sk.idx) return 1;
+      if (selGroup && sk.group === selGroup) return 0.6;
+      return 0.2;
+    }
+
+    function getLabelOpacity(sk, selGroup) {
+      if (state.highlight) return 0.5;
+      if (state.groupFilter && sk.group !== state.groupFilter) return 0.2;
+      if (state.selected === null) return 1;
+      if (state.selected === sk.idx) return 1;
+      if (selGroup && sk.group === selGroup) return 0.65;
+      return 0.3;
+    }
+
+    function updatePanel() {
+      var titleEl = document.getElementById("panelTitle");
+      var contentEl = document.getElementById("panelContent");
+
+      if (state.selected === null) {
+        titleEl.textContent = "Select a skill";
+        contentEl.innerHTML = '<p style="color:#9ca3af;font-size:13px">Click any skill to see details.</p>';
+        return;
+      }
+
+      var sk = allSkills[state.selected];
+      titleEl.textContent = sk.name;
+
+      var html = '<span class="tag ' + (sk.group === "Core" ? "core" : "supporting") + '">' + sk.group + '</span>';
+      html += '<p class="desc">' + sk.explanation + '</p>';
+
+      // Self Assessment box
+      if (state.toggle === "self") {
+        var lvl = DATA.levels[sk.selfAssessment - 1];
+        html += '<div class="self-box">';
+        html += '<div style="display:flex;align-items:center;gap:8px">';
+        html += '<div style="width:28px;height:28px;border-radius:50%;background:#1f2937;color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700">' + sk.selfAssessment + '</div>';
+        html += '<div>';
+        html += '<div style="font-size:13px;font-weight:600;color:#0369a1">Level ' + sk.selfAssessment + ': ' + (lvl ? lvl.name : '') + '</div>';
+        html += '</div>';
+        html += '</div>';
+        html += '<p style="font-size:12px;color:#0284c7;margin-top:8px;line-height:1.5">' + (lvl ? lvl.description : '') + '</p>';
+        html += '</div>';
+        // NO progression bar under Self Assessment
+      } else {
+        // Level Progression - ONLY when NOT in self assessment mode
+        html += '<div class="prog"><h3>Level Progression:</h3><div class="prog-bar">';
+        for (var pi = 0; pi < sk.colors.length; pi++) {
+          var pc = sk.colors[pi];
+          var br = pi === 0 ? "4px 0 0 4px" : (pi === 7 ? "0 4px 4px 0" : "0");
+          var border = state.selectedLevel === pi ? "2px solid #475569" : "none";
+          html += '<div onclick="selectLevel(' + pi + ')" style="background:' + COLORS[pc] + ';border-radius:' + br + ';border:' + border + '">' + (pi+1) + '</div>';
+        }
+        html += '</div>';
+
+        if (state.selectedLevel !== null) {
+          var lv = DATA.levels[state.selectedLevel];
+          html += '<div style="margin-top:10px;padding:10px;background:#f9fafb;border-radius:8px">';
+          html += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+          html += '<div style="width:14px;height:14px;border-radius:3px;background:' + COLORS[sk.colors[state.selectedLevel]] + '"></div>';
+          html += '<span style="font-weight:600;font-size:12px;color:#1f2937">Level ' + (state.selectedLevel + 1) + ': ' + (lv ? lv.name : '') + '</span>';
+          html += '</div>';
+          html += '<p style="font-size:12px;color:#4b5563;line-height:1.5">' + (lv ? lv.description : '') + '</p>';
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+
+      contentEl.innerHTML = html;
+    }
+
+    function renderLegend() {
+      var bar = document.getElementById("legendBar");
+      var html = '';
+
+      for (var li = 0; li < DATA.levels.length; li++) {
+        var l = DATA.levels[li];
+        var active = state.highlight === l.color ? " active" : "";
+        html += '<button class="legend-btn' + active + '" data-tip="' + l.description + '" onclick="toggleHighlight(\'' + l.color + '\')">';
+        html += '<div class="box" style="background:' + COLORS[l.color] + '">' + l.level + '</div>';
+        html += '<span style="color:#374151;font-weight:500">' + l.name + '</span>';
+        html += '</button>';
+      }
+
+      html += '<div style="width:1px;height:20px;background:#d1d5db;margin:0 6px"></div>';
+
+      var coreActive = state.groupFilter === "Core" ? " active" : "";
+      html += '<button class="legend-btn' + coreActive + '" data-tip="' + coreCount + ' essential skills for UX practice" onclick="toggleGroup(\'Core\')">';
+      html += '<div style="width:14px;height:14px;border-radius:3px;background:#374151"></div>';
+      html += '<span style="color:#374151;font-weight:500">Core (' + coreCount + ')</span>';
+      html += '</button>';
+
+      var supActive = state.groupFilter === "Supporting" ? " active" : "";
+      html += '<button class="legend-btn' + supActive + '" data-tip="' + (allSkills.length - coreCount) + ' complementary skills" onclick="toggleGroup(\'Supporting\')">';
+      html += '<div style="width:14px;height:14px;border-radius:3px;background:#d1d5db;border:1px dashed #9ca3af"></div>';
+      html += '<span style="color:#6b7280;font-weight:500;font-style:italic">Supporting (' + (allSkills.length - coreCount) + ')</span>';
+      html += '</button>';
+
+      bar.innerHTML = html;
+    }
+
+    function setToggle(t) {
+      state.toggle = state.toggle === t ? null : t;
+      document.getElementById("btnLevels").className = state.toggle === "levels" ? "btn active" : "btn";
+      document.getElementById("btnSelf").className = state.toggle === "self" ? "btn active" : "btn";
+      state.selectedLevel = null;
+      renderChart();
+      updatePanel();
+    }
+
+    function selectLevel(i) {
+      if (event) event.stopPropagation();
+      state.selectedLevel = state.selectedLevel === i ? null : i;
+      updatePanel();
+    }
+
+    function toggleHighlight(c) {
+      state.highlight = state.highlight === c ? null : c;
+      renderChart();
+      renderLegend();
+    }
+
+    function toggleGroup(g) {
+      state.groupFilter = state.groupFilter === g ? null : g;
+      renderChart();
+      renderLegend();
+    }
+
+    function resetAll() {
+      state.selected = null;
+      state.selectedLevel = null;
+      state.highlight = null;
+      state.groupFilter = null;
+      renderChart();
+      renderLegend();
+      updatePanel();
+    }
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.querySelector(".container").requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+
+    window.onresize = function() { renderChart(); };
+    window.onload = init;
+  </script>
+</body>
+</html>
