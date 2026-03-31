@@ -238,6 +238,9 @@
         svg.appendChild(supBg);
       }
 
+      var ringCount = 8;
+      var ringW = (outerR - innerR) / ringCount;
+
       // Skills
       for (var idx = 0; idx < allSkills.length; idx++) {
         var sk = allSkills[idx];
@@ -248,11 +251,13 @@
         var isActive = state.selected === idx;
         var isMarked = state.marked[sk.name] === true;
         
-        var fillColor;
+        var baseColor, markedColor;
         if (sk.group === "core") {
-          fillColor = isMarked ? COLORS.coreMarked : COLORS.coreUnmarked;
+          baseColor = COLORS.coreUnmarked;
+          markedColor = COLORS.coreMarked;
         } else {
-          fillColor = isMarked ? COLORS.supportMarked : COLORS.supportUnmarked;
+          baseColor = COLORS.supportUnmarked;
+          markedColor = COLORS.supportMarked;
         }
 
         var g = document.createElementNS("http://www.w3.org/2000/svg", "g");
@@ -265,19 +270,34 @@
           };
         })(idx);
 
-        // Main segment
-        var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        path.setAttribute("d", arc(ang.start, ang.end, innerR, outerR));
-        path.setAttribute("fill", fillColor);
-        path.setAttribute("stroke", isActive ? "#374151" : "#fff");
-        path.setAttribute("stroke-width", isActive ? 3 : 1.5);
-        path.setAttribute("opacity", isMarked ? 1 : 0.6);
-        path.style.transition = "all 0.2s";
-        g.appendChild(path);
+        // 8 ring segments per skill
+        for (var ri = 0; ri < ringCount; ri++) {
+          var rInner = innerR + ri * ringW;
+          var rOuter = innerR + (ri + 1) * ringW;
+          var path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          path.setAttribute("d", arc(ang.start, ang.end, rInner, rOuter));
+          
+          // Gradient effect: inner rings lighter, outer rings darker when marked
+          var fillColor;
+          if (isMarked) {
+            var intensity = 0.5 + (ri / ringCount) * 0.5;
+            fillColor = markedColor;
+            path.setAttribute("opacity", intensity);
+          } else {
+            fillColor = baseColor;
+            path.setAttribute("opacity", 0.4 + (ri / ringCount) * 0.3);
+          }
+          
+          path.setAttribute("fill", fillColor);
+          path.setAttribute("stroke", isActive ? "rgba(55,65,81,0.4)" : "#fff");
+          path.setAttribute("stroke-width", isActive ? 1 : 0.5);
+          path.style.transition = "all 0.2s";
+          g.appendChild(path);
+        }
 
         // Checkmark for marked skills
         if (isMarked) {
-          var checkR = (innerR + outerR) / 2;
+          var checkR = innerR + ringW * 4;
           var checkX = cx + checkR * Math.cos(mid);
           var checkY = cy + checkR * Math.sin(mid);
           var check = document.createElementNS("http://www.w3.org/2000/svg", "text");
@@ -285,8 +305,9 @@
           check.setAttribute("y", checkY);
           check.setAttribute("text-anchor", "middle");
           check.setAttribute("dominant-baseline", "middle");
-          check.setAttribute("font-size", "24");
-          check.setAttribute("fill", "#fff");
+          check.setAttribute("font-size", "20");
+          check.setAttribute("font-weight", "bold");
+          check.setAttribute("fill", "#1f2937");
           check.textContent = "✓";
           g.appendChild(check);
         }
@@ -349,27 +370,45 @@
         svg.appendChild(cTxt);
       }
 
-      // Section labels
+      // Section labels - positioned along the arc at midpoint of each section
+      var coreMidAngle = (angles[0].start + angles[coreCount - 1].end) / 2;
+      var supMidAngle = (angles[coreCount].start + angles[total - 1].end) / 2;
+      var labelArcR = innerR - 35;
+      
+      // HARD SKILLS label - curved along inner arc
       var coreLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      coreLabel.setAttribute("x", cx - 300);
-      coreLabel.setAttribute("y", cy - 420);
+      var coreLabelX = cx + labelArcR * Math.cos(coreMidAngle);
+      var coreLabelY = cy + labelArcR * Math.sin(coreMidAngle);
+      var coreLabelRot = (coreMidAngle * 180 / Math.PI);
+      if (coreLabelRot < -90 || coreLabelRot > 90) coreLabelRot += 180;
+      coreLabel.setAttribute("x", coreLabelX);
+      coreLabel.setAttribute("y", coreLabelY);
       coreLabel.setAttribute("text-anchor", "middle");
+      coreLabel.setAttribute("dominant-baseline", "middle");
+      coreLabel.setAttribute("transform", "rotate(" + coreLabelRot + " " + coreLabelX + " " + coreLabelY + ")");
       coreLabel.setAttribute("fill", "#047857");
-      coreLabel.setAttribute("font-size", "14");
+      coreLabel.setAttribute("font-size", "11");
       coreLabel.setAttribute("font-weight", "700");
-      coreLabel.setAttribute("letter-spacing", "2");
+      coreLabel.setAttribute("letter-spacing", "1.5");
       coreLabel.textContent = "HARD SKILLS";
       svg.appendChild(coreLabel);
 
+      // SOFT SKILLS label - curved along inner arc
       var supLabel = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      supLabel.setAttribute("x", cx + 300);
-      supLabel.setAttribute("y", cy + 440);
+      var supLabelX = cx + labelArcR * Math.cos(supMidAngle);
+      var supLabelY = cy + labelArcR * Math.sin(supMidAngle);
+      var supLabelRot = (supMidAngle * 180 / Math.PI);
+      if (supLabelRot < -90 || supLabelRot > 90) supLabelRot += 180;
+      supLabel.setAttribute("x", supLabelX);
+      supLabel.setAttribute("y", supLabelY);
       supLabel.setAttribute("text-anchor", "middle");
+      supLabel.setAttribute("dominant-baseline", "middle");
+      supLabel.setAttribute("transform", "rotate(" + supLabelRot + " " + supLabelX + " " + supLabelY + ")");
       supLabel.setAttribute("fill", "#1d4ed8");
-      supLabel.setAttribute("font-size", "14");
+      supLabel.setAttribute("font-size", "11");
       supLabel.setAttribute("font-weight", "600");
       supLabel.setAttribute("font-style", "italic");
-      supLabel.setAttribute("letter-spacing", "2");
+      supLabel.setAttribute("letter-spacing", "1.5");
       supLabel.textContent = "SOFT SKILLS";
       svg.appendChild(supLabel);
     }
