@@ -1,0 +1,37 @@
+{
+  "settings": {
+    "title": "Service Designer Skill Matrix",
+    "subtitle": "Mark the skills you identify with or have experience in",
+    "instructions": "Click on any skill segment to mark it. Click again to unmark."
+  },
+
+  "skills": {
+    "core": [
+      { "name": "Service blueprinting", "explanation": "Creating detailed visualizations of service processes, showing frontstage/backstage activities, touchpoints, and support systems." },
+      { "name": "Customer journey mapping", "explanation": "Mapping end-to-end customer experiences across channels, identifying pain points, emotions, and opportunities." },
+      { "name": "User research & interviews", "explanation": "Planning and conducting qualitative research to understand user needs, behaviors, and motivations." },
+      { "name": "Stakeholder mapping", "explanation": "Identifying and visualizing relationships between all parties involved in or affected by a service." },
+      { "name": "Workshop design & facilitation", "explanation": "Designing and leading collaborative sessions to align teams, generate ideas, and make decisions." },
+      { "name": "Service prototyping", "explanation": "Creating low-fidelity simulations of service experiences to test and iterate on concepts." },
+      { "name": "Systems thinking", "explanation": "Understanding interconnections, feedback loops, and emergent behaviors within complex service ecosystems." },
+      { "name": "Touchpoint design", "explanation": "Designing individual interaction points where customers engage with the service across channels." },
+      { "name": "Co-design", "explanation": "Involving users, stakeholders, and frontline staff as active participants in the design process." },
+      { "name": "Research synthesis", "explanation": "Analyzing and distilling research findings into actionable insights, patterns, and opportunities." },
+      { "name": "Business model understanding", "explanation": "Grasping how services create, deliver, and capture value within organizational constraints." },
+      { "name": "Process mapping", "explanation": "Documenting and analyzing operational workflows to identify inefficiencies and improvement opportunities." }
+    ],
+
+    "supporting": [
+      { "name": "Storytelling & narrative", "explanation": "Crafting compelling stories to communicate insights, concepts, and the value of design decisions." },
+      { "name": "Empathy", "explanation": "Deeply understanding and sharing the feelings of users, customers, and stakeholders." },
+      { "name": "Cross-functional collaboration", "explanation": "Working effectively across disciplines, departments, and organizational boundaries." },
+      { "name": "Strategic communication", "explanation": "Tailoring messages to different audiences and contexts to drive understanding and action." },
+      { "name": "Influencing without authority", "explanation": "Building buy-in and driving change without formal power or hierarchical position." },
+      { "name": "Problem framing", "explanation": "Defining and reframing challenges to ensure teams are solving the right problems." },
+      { "name": "Adaptability", "explanation": "Adjusting approach and methods based on context, constraints, and emerging information." },
+      { "name": "Managing ambiguity", "explanation": "Staying effective and guiding others when goals, processes, or outcomes are unclear." },
+      { "name": "Stakeholder management", "explanation": "Building relationships, managing expectations, and navigating organizational politics." },
+      { "name": "Visual communication", "explanation": "Using diagrams, sketches, and visual artifacts to convey complex ideas clearly." }
+    ]
+  }
+}
