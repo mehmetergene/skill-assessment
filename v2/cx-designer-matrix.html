@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>CX Designer Skill Matrix</title>
+<!-- Modified 2026-10-02: validation, offline loading, keyboard access, storage and exports. Original visual design retained. -->
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; width: 100%; overflow: hidden; font-family: system-ui, -apple-system, sans-serif; background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+    .container { display: flex; flex-direction: column; height: 100vh; background: linear-gradient(135deg, #f8fafc, #e2e8f0); }
+    .container:fullscreen { background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important; }
+    ::backdrop { background: linear-gradient(135deg, #f8fafc, #e2e8f0) !important; }
+    .header { display: flex; align-items: center; justify-content: center; padding: 12px 20px; position: relative; }
+    .header-left { position: absolute; left: 20px; display: flex; gap: 8px; align-items: center; }
+    .header h1 { font-size: 20px; font-weight: 700; color: #1f2937; cursor: pointer; }
+    .header p { font-size: 13px; color: #6b7280; margin-top: 4px; }
+    .header-right { position: absolute; right: 20px; display: flex; gap: 10px; align-items: center; }
+    .btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid #d1d5db; background: #fff; color: #555; transition: all 0.15s; }
+    .btn:hover { background: #f3f4f6; }
+    .btn-icon { padding: 8px 12px; display: flex; align-items: center; gap: 6px; }
+    .btn-icon svg { width: 16px; height: 16px; }
+    .main { flex: 1; display: flex; position: relative; overflow: hidden; }
+    .chart-wrap { position: absolute; top: 0; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: center; }
+    .panel { position: absolute; right: 16px; top: 16px; width: 280px; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); padding: 20px; z-index: 10; max-height: calc(100% - 32px); overflow-y: auto; }
+    .panel h2 { font-size: 16px; font-weight: 700; color: #1f2937; margin-bottom: 8px; }
+    .panel .tag { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; margin-bottom: 10px; }
+    .panel .tag.core { background: #7CB9A0; color: #fff; }
+    .panel .tag.supporting { background: #A8C8E8; color: #1f2937; }
+    .panel .desc { color: #4b5563; font-size: 14px; line-height: 1.6; margin-bottom: 16px; }
+    .panel .status { padding: 12px; border-radius: 8px; font-size: 13px; font-weight: 500; }
+    .panel .status.marked { background: #ecfdf5; color: #047857; }
+    .panel .status.unmarked { background: #f3f4f6; color: #6b7280; }
+    .footer { background: rgba(255,255,255,0.95); border-top: 1px solid #e5e7eb; padding: 12px 16px; }
+    .footer-inner { display: flex; align-items: center; justify-content: center; gap: 24px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #374151; }
+    .legend-item .dot { width: 16px; height: 16px; border-radius: 4px; }
+    .counter { font-size: 14px; color: #6b7280; padding: 8px 16px; background: #f9fafb; border-radius: 8px; }
+    .counter strong { color: #1f2937; }
+    .copyright { text-align: center; font-size: 10px; color: #9ca3af; margin-top: 8px; }
+    .error-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 40px; text-align: center; }
+    .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 32px; max-width: 500px; }
+    .error-box h2 { color: #dc2626; margin-bottom: 16px; font-size: 18px; }
+    .error-box p { color: #7f1d1d; margin-bottom: 16px; font-size: 14px; line-height: 1.6; }
+    .loading { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; gap: 16px; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e5e7eb; border-top-color: #3b82f6; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  
+    .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
+    .title-button { all:unset;cursor:pointer; }
+    .title-button.long-title { display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    button:focus-visible { outline:3px solid #0f172a;outline-offset:3px; }
+    .main { min-height:0; }
+    .panel h2,.panel .desc,.header-title { overflow-wrap:anywhere; }
+    .panel .desc { white-space:pre-wrap; }
+    .header-title { max-width:calc(100% - 650px); }
+    .header-title h1 { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+    .header-title p { display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; }
+    .main.is-dense .chart-wrap { display:block;overflow:auto;padding:40px; }
+    .main.is-dense #chart { display:block;margin:auto; }
+    @media (max-width:900px) {
+      html,body { overflow:auto;height:auto;min-height:100%; }
+      .container { height:auto;min-height:100vh; }
+      .header { display:grid;grid-template-columns:minmax(0,1fr);gap:12px;padding:12px; }
+      .header-title { grid-row:1;max-width:100%;min-width:0; }
+      .header-left,.header-right { position:static;justify-content:center;flex-wrap:wrap; }
+      .header-left { grid-row:2; }.header-right { grid-row:3; }
+      .main { display:flex;flex-direction:column;overflow:visible; }
+      .chart-wrap,.main.is-dense .chart-wrap { position:relative;inset:auto;display:block;overflow:auto;height:60vh;min-height:320px;width:100%;padding:40px; }
+      #chart,.main.is-dense #chart { display:block;margin:auto; }
+      .panel { position:relative;right:auto;top:auto;width:calc(100% - 32px);margin:16px;max-height:none; }
+      .footer-inner { gap:12px; }
+    }
+    @media (min-width:901px) and (max-height:600px) {
+      .chart-wrap { align-items:flex-start;overflow:auto;padding:40px; }
+      #chart { flex-shrink:0; }
+    }
+
+</style></head><body>
+<div class="container" id="app"><div class="header"><div class="header-left"><button id="exportCSV" class="btn btn-icon" title="Export as CSV"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>CSV</button><button id="exportImage" class="btn btn-icon" title="Save as Image; Shift-click for SVG"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>Image</button><button id="saveProgress" class="btn btn-icon" title="Save Progress; Shift-click to download a backup"><svg aria-hidden="true" focusable="false" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>Save</button></div><div class="header-title" style="text-align:center"><h1><button type="button" class="title-button" id="appTitle" title="Reset skill selection">Skill Matrix</button></h1><p id="appSubtitle"></p></div><div class="header-right"><button id="clearAll" class="btn">Clear All</button><button id="fullscreen" class="btn" aria-label="Enter fullscreen" title="Fullscreen">⛶</button></div></div><main class="main"><div class="chart-wrap"><svg id="chart"></svg></div><div class="panel" id="panel"><h2 id="panelTitle">Select a skill</h2><div id="panelContent"><p style="color:#9ca3af;font-size:14px">Click any skill to see details, then click a ring (1-8) to set your proficiency level.</p></div></div></main><footer class="footer"><div class="footer-inner"><div class="legend-item"><div class="dot" style="background:#7CB9A0"></div><span>Hard Skills (Core)</span></div><div class="legend-item"><div class="dot" style="background:#A8C8E8"></div><span>Soft Skills (Supporting)</span></div><div class="legend-item"><div class="dot" style="background:#e5e7eb"></div><span>Not assessed</span></div><div class="counter" id="counter">Assessed: <strong>0</strong> / <span>0</span></div></div><p class="copyright">CX Designer Skill Matrix • Career Coaching Tool</p></footer></div>
+<div id="notice" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+<div class="sr-only" id="chartInstructions">Use Left and Right to move between skills. Press Enter or Space to select. Press 1 through 8 to set a rating. Up and Down enter the ring controls. Delete clears the current rating; Escape clears the selection. Alt+O loads a skill file; Alt+R restores progress. Shift-click Save to download progress; Shift-click Image for an SVG.</div>
+<input id="skillsFile" type="file" accept="application/json,.json" hidden><input id="progressFile" type="file" accept="application/json,.json" hidden>
+<script id="defaultData" type="application/json">{
+  "_meta": {
+    "modified": "2026-10-02",
+    "notice": "Modified from Skill Assessment (V2): added stable skill IDs and a suggested observable self-assessment rubric. Original skill names and explanations retained."
+  },
+  "settings": {
+    "title": "CX Designer Skill Matrix",
+    "subtitle": "Mark your proficiency level (1-8) for each skill"
+  },
+  "skills": {
+    "core": [
+      {
+        "name": "Customer journey mapping",
+        "explanation": "Creating end-to-end visualizations of customer experiences across all touchpoints, channels, and stages of the relationship.",
+        "id": "customer-journey-mapping"
+      },
+      {
+        "name": "Voice of Customer programs",
+        "explanation": "Designing and managing systematic approaches to capture, analyze, and act on customer feedback and insights.",
+        "id": "voice-of-customer-programs"
+      },
+      {
+        "name": "CX metrics \u0026 measurement",
+        "explanation": "Defining and tracking key experience indicators like NPS, CSAT, CES, and linking them to business outcomes.",
+        "id": "cx-metrics-measurement"
+      },
+      {
+        "name": "Touchpoint analysis",
+        "explanation": "Evaluating individual interaction points to identify friction, opportunities, and moments that matter most to customers.",
+        "id": "touchpoint-analysis"
+      },
+      {
+        "name": "Experience mapping",
+        "explanation": "Visualizing the holistic customer experience including emotions, expectations, and perceptions at each stage.",
+        "id": "experience-mapping"
+      },
+      {
+        "name": "Customer research methods",
+        "explanation": "Planning and conducting qualitative and quantitative research to understand customer needs, behaviors, and pain points.",
+        "id": "customer-research-methods"
+      },
+      {
+        "name": "Data analysis \u0026 insights",
+        "explanation": "Interpreting customer data from multiple sources to identify patterns, trends, and actionable opportunities.",
+        "id": "data-analysis-insights"
+      },
+      {
+        "name": "Persona development",
+        "explanation": "Creating evidence-based customer archetypes that represent key segments and guide experience design decisions.",
+        "id": "persona-development"
+      },
+      {
+        "name": "Service recovery design",
+        "explanation": "Designing processes and experiences to effectively handle failures and turn detractors into promoters.",
+        "id": "service-recovery-design"
+      },
+      {
+        "name": "Omnichannel experience design",
+        "explanation": "Creating seamless, consistent experiences across all channels (digital, physical, human) throughout the customer lifecycle.",
+        "id": "omnichannel-experience-design"
+      },
+      {
+        "name": "CX strategy development",
+        "explanation": "Defining the vision, priorities, and roadmap for customer experience aligned with business objectives.",
+        "id": "cx-strategy-development"
+      },
+      {
+        "name": "Feedback loop design",
+        "explanation": "Creating systems to continuously capture customer input and close the loop with improvements and communication.",
+        "id": "feedback-loop-design"
+      }
+    ],
+    "supporting": [
+      {
+        "name": "Stakeholder management",
+        "explanation": "Building relationships and managing expectations with executives, teams, and partners across the organization.",
+        "id": "stakeholder-management"
+      },
+      {
+        "name": "Cross-functional collaboration",
+        "explanation": "Working effectively with marketing, sales, operations, IT, and other teams to deliver unified customer experiences.",
+        "id": "cross-functional-collaboration"
+      },
+      {
+        "name": "Strategic thinking",
+        "explanation": "Connecting CX initiatives to business strategy and demonstrating ROI of experience improvements.",
+        "id": "strategic-thinking"
+      },
+      {
+        "name": "Storytelling \u0026 presentation",
+        "explanation": "Communicating customer insights and CX vision compellingly to inspire action and secure buy-in.",
+        "id": "storytelling-presentation"
+      },
+      {
+        "name": "Empathy",
+        "explanation": "Deeply understanding and advocating for customer perspectives, emotions, and unmet needs.",
+        "id": "empathy"
+      },
+      {
+        "name": "Change management",
+        "explanation": "Guiding organizations through CX transformation, addressing resistance, and building customer-centric culture.",
+        "id": "change-management"
+      },
+      {
+        "name": "Influencing \u0026 persuasion",
+        "explanation": "Driving CX priorities and decisions without direct authority across siloed organizations.",
+        "id": "influencing-persuasion"
+      },
+      {
+        "name": "Business acumen",
+        "explanation": "Understanding business models, P\u0026L impact, and translating CX improvements into financial outcomes.",
+        "id": "business-acumen"
+      },
+      {
+        "name": "Problem solving",
+        "explanation": "Identifying root causes of experience issues and developing creative, feasible solutions.",
+        "id": "problem-solving"
+      },
+      {
+        "name": "Customer advocacy",
+        "explanation": "Championing the customer perspective in organizational decisions and balancing it with business constraints.",
+        "id": "customer-advocacy"
+      }
+    ]
+  },
+  "levels": [
+    {
+      "level": 1,
+      "title": "Awareness",
+      "description": "I can explain the basic terms and purpose of this skill and recognize an example. I need step-by-step help to apply it."
+    },
+    {
+      "level": 2,
+      "title": "Guided practice",
+      "description": "I can complete a small, clearly defined task using a template and regular guidance, and explain what I did."
+    },
+    {
+      "level": 3,
+      "title": "Basic independence",
+      "description": "I can complete routine tasks independently in a familiar context, show an example of my work, and identify when I need help."
+    },
+    {
+      "level": 4,
+      "title": "Reliable practice",
+      "description": "I can deliver this work consistently in varied situations, explain my choices, and use feedback or evidence to improve the result."
+    },
+    {
+      "level": 5,
+      "title": "Advanced application",
+      "description": "I can adapt the approach to complex or ambiguous problems, evaluate alternatives, and demonstrate the effect of my work with evidence."
+    },
+    {
+      "level": 6,
+      "title": "Coaching others",
+      "description": "I can review and coach others in this skill, improve team practices, and show how those improvements helped people deliver better work."
+    },
+    {
+      "level": 7,
+      "title": "Organizational leadership",
+      "description": "I can establish approaches across teams, align stakeholders, and demonstrate sustained improvements in customer experience or business outcomes."
+    },
+    {
+      "level": 8,
+      "title": "Practice leadership",
+      "description": "I can develop and validate new approaches, share them beyond my own team, and show evidence that others adopted them and achieved useful results."
+    }
+  ]
+}
+</script>
+<script>
+'use strict';
+    const STORAGE_KEY = 'cxDesignerAssessment.v2';
+    const LEGACY_KEY = 'cxDesignerMarked';
+    const DATASET_KEY = 'cxDesignerSkills.v2';
+    var DATA = null;
+    var allSkills = [];
+    var state = {selected:null, marked:Object.create(null)};
+    const defaultData = JSON.parse(document.getElementById('defaultData').textContent);
+    let baseDataset = defaultData;
+    const byId = id => document.getElementById(id);
+    const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
+    const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+    function normalizeDataset(raw) {
+      if (!isObject(raw) || !isObject(raw.skills)) throw new Error('A skill configuration needs a skills object with core and supporting arrays.');
+      const ids=new Set();
+      const data={settings:isObject(raw.settings)?raw.settings:{},skills:{core:[],supporting:[]},levels:defaultData.levels};
+      for (const group of ['core','supporting']) {
+        const list=raw.skills[group]===undefined?[]:raw.skills[group];
+        if (!Array.isArray(list)) throw new Error(group+' must be an array of skills.');
+        list.forEach((skill,index)=> {
+          if (!isObject(skill) || typeof skill.name!=='string' || !skill.name.trim() || typeof skill.explanation!=='string') throw new Error('Each skill needs a name and explanation ('+group+', item '+(index+1)+').');
+          const slug=skill.name.normalize('NFKD').replace(/[^\p{L}\p{N}]+/gu,'-').toLowerCase().replace(/^-|-$/g,'');
+          const fallback=slug?group+'-'+slug:group+'-'+index;
+          const id=typeof skill.id==='string'&&skill.id.trim()?skill.id.trim():fallback;
+          if(ids.has(id)) throw new Error('Each skill needs a unique ID. Duplicate ID: '+id);
+          ids.add(id); data.skills[group].push({id,name:skill.name,explanation:skill.explanation,group});
+        });
+      }
+      if (raw.levels!==undefined) {
+        if (!Array.isArray(raw.levels)||raw.levels.length!==8||!raw.levels.every(level=>isObject(level)&&Number.isInteger(level.level))) throw new Error('The proficiency guide must define eight level objects numbered 1–8.');
+        data.levels=raw.levels.slice().sort((a,b)=>a.level-b.level);
+        data.levels.forEach((level,i)=> { if(!isObject(level)||level.level!==i+1||typeof level.title!=='string'||!level.title.trim()||typeof level.description!=='string') throw new Error('Each proficiency level needs its number, title and description.'); });
+      }
+      return data;
+    }
+    function filterRatings(raw,legacy=false) {
+      const clean=Object.create(null); let discarded=0;
+      if(!isObject(raw)) return {marked:clean,discarded:1};
+      const accepted=new Set();
+      allSkills.forEach(skill=> {
+        const key=legacy?skill.name:skill.id;
+        if(own(raw,key)) {
+          const value=raw[key]; accepted.add(key);
+          if(Number.isInteger(value)&&value>=1&&value<=8) clean[skill.id]=value; else discarded++;
+        }
+      });
+      discarded+=Object.keys(raw).filter(key=>!accepted.has(key)).length;
+      return {marked:clean,discarded};
+    }
+    function loadMarkedState() {
+      try {
+        let saved=localStorage.getItem(STORAGE_KEY); let legacy=false;
+        if(saved===null) {saved=localStorage.getItem(LEGACY_KEY);legacy=true;}
+        if(saved===null) return;
+        let parsed=JSON.parse(saved);
+        if(!legacy) {if(!isObject(parsed)||parsed.version!==2||!isObject(parsed.marked)) throw new Error('Unsupported saved assessment'); parsed=parsed.marked;}
+        const checked=filterRatings(parsed,legacy); state.marked=checked.marked;
+        if(checked.discarded) setNotice('Some saved ratings were invalid or no longer match your skills. Valid ratings were restored. Keep a progress backup.');
+        else if(legacy) setNotice('Your previous assessment was restored. Download a backup to keep a portable copy.','success');
+        else setNotice('Saved ratings restored from this browser.','success');
+      } catch(error) { state.marked=Object.create(null); setNotice('Saved progress could not be restored. You can still assess skills or import a progress backup.','error'); }
+    }
+    function progressData() {return {version:2,title:DATA.settings.title||'Skill Matrix',savedAt:new Date().toISOString(),marked:state.marked};}
+    function saveMarkedState() {try {localStorage.setItem(STORAGE_KEY,JSON.stringify(progressData()));return true;}catch(error){return false;}}
+    function download(blob,filename) {const url=URL.createObjectURL(blob);const link=document.createElement('a');link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
+    function csvCell(value) {let text=String(value);if(/^[\s]*[=+@-]/.test(text))text="'"+text;return '"'+text.replace(/"/g,'""')+'"';}
+    function exportCSV() {
+      const rows=[['Skill Name','Type','Level','Description']];allSkills.forEach(skill=>rows.push([skill.name,skill.group==='core'?'Hard Skill':'Soft Skill',state.marked[skill.id]||0,skill.explanation]));
+      download(new Blob(['\uFEFF'+rows.map(row=>row.map(csvCell).join(',')).join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'}),'cx-designer-skills.csv');
+      setNotice('CSV exported with '+allSkills.length+' skills.','success');
+    }
+    async function exportImage() {
+      const button=byId('exportImage');button.disabled=true;
+      try {const blob=await chartPNGBlob(byId('chart'),byId('appTitle').textContent);download(blob,'cx-designer-skills.png');const tall=Number(byId('chart').dataset.chartHeight)>8000;setNotice(tall?'Image exported at a reduced scale for this large assessment. Use Export SVG to keep every label sharp when zoomed.':'Skill overview image exported.','success');}
+      catch(error){setNotice('The image could not be exported. '+error.message,'error');}
+      finally{button.disabled=!allSkills.length;}
+    }
+    function exportSVG() {try{download(chartSVGBlob(byId('chart'),byId('appTitle').textContent),'cx-designer-skills.svg');setNotice('SVG exported with the full chart. It stays sharp when zoomed.','success');}catch(error){setNotice('SVG export failed. '+error.message,'error');}}
+    function exportProgress() {download(new Blob([JSON.stringify(progressData(),null,2)],{type:'application/json'}),'cx-designer-progress.json');setNotice('Progress backup downloaded. Keep it to restore your ratings in any browser.','success');}
+    async function importProgress(file) {
+      try {
+        const raw=JSON.parse(await file.text());if(!isObject(raw)||raw.version!==2||!isObject(raw.marked))throw new Error('Choose a version 2 progress backup.');
+        const checked=filterRatings(raw.marked);Object.assign(state.marked,checked.marked);const saved=saveMarkedState();updatePanel();updateCounter();renderChart();
+        setNotice(Object.keys(checked.marked).length+' ratings imported.'+(checked.discarded?' Unmatched or invalid ratings were skipped.':'')+(saved?' Saved in this browser.':' Browser storage is unavailable; download a backup before closing.'),saved?'success':'error');
+      } catch(error){setNotice('Progress import failed. '+error.message+' Your current ratings were kept.','error');}
+    }
+    async function importSkills(file) {
+      try {
+        loadDataset(JSON.parse(await file.text()),true);let saved=false;
+        try{localStorage.setItem(DATASET_KEY,JSON.stringify(DATA));saved=saveMarkedState();}catch(error){}
+        setNotice(allSkills.length+' skills loaded. Ratings for matching IDs were kept.'+(saved?' Skills and ratings saved in this browser.':' Keep your skills file and download a progress backup because browser storage is unavailable.'),saved?'success':'error');
+      }
+      catch(error){setNotice('Skill import failed. '+error.message+' Your current assessment was kept.','error');}
+    }
+    function resetSkills() {loadDataset(baseDataset,true);let saved=false;try{localStorage.removeItem(DATASET_KEY);saved=saveMarkedState();}catch(error){}setNotice(saved?'Original skills restored. Ratings for matching IDs were kept.':'Original skills restored on this page. Browser storage could not be updated.',saved?'success':'error');}
+    async function toggleFullscreen() {
+      try {if(document.fullscreenElement)await document.exitFullscreen();else if(byId('app').requestFullscreen)await byId('app').requestFullscreen();else setNotice('Fullscreen is unavailable in this browser.');}
+      catch(error){setNotice('Fullscreen could not be opened in this browser.','error');}
+    }
+    async function init() {
+      wireActions();let raw=defaultData;let fallback=false;
+      if(location.protocol!=='file:') {
+        const controller=new AbortController();const timeout=setTimeout(()=>controller.abort(),4000);
+        try {const response=await fetch('cx-designer-skills.json',{signal:controller.signal});if(!response.ok)throw new Error('HTTP '+response.status);raw=await response.json();}
+        catch(error){fallback=true;}finally{clearTimeout(timeout);}
+      }
+      let message=fallback?'The external skill file could not be loaded. The bundled assessment is ready; you can load a different skill configuration.':'Ratings save automatically in this browser. Download a progress backup to keep a portable copy.';
+      try{baseDataset=normalizeDataset(raw);}catch(error){baseDataset=defaultData;message='The external skill configuration was invalid. The bundled assessment is ready. Load a valid skill configuration to replace it.';}
+      raw=baseDataset;
+      try{const savedSkills=localStorage.getItem(DATASET_KEY);if(savedSkills!==null){raw=normalizeDataset(JSON.parse(savedSkills));message='Your imported skill configuration was restored from this browser.';}}
+      catch(error){message='Saved skills could not be restored. The original assessment is ready. Reload your skills file if needed.';}
+      loadDataset(raw,false);setNotice(message);loadMarkedState();updatePanel();updateCounter();renderChart();
+    }
+    
+    // Keep the original presentation; variable content is always written as text.
+    function setNotice(message,kind='info') {
+      const node=byId('notice');node.textContent=message;node.dataset.kind=kind;
+      let error=byId('storageWarning');
+      if(kind==='error') {
+        if(!error){error=document.createElement('p');error.id='storageWarning';error.style.cssText='font-size:12px;color:#991b1b;margin-top:8px';byId('panelContent').append(error);}
+        error.textContent=message;
+      } else if(error) error.remove();
+    }
+    function loadDataset(raw,preserve=true) {
+      const next=normalizeDataset(raw);DATA=next;allSkills=next.skills.core.concat(next.skills.supporting);
+      state.marked=preserve?filterRatings(state.marked).marked:Object.create(null);
+      if(!allSkills.some(skill=>skill.id===state.selected))state.selected=null;
+      byId('appTitle').textContent=typeof DATA.settings.title==='string'&&DATA.settings.title?DATA.settings.title:'Skill Matrix';
+      byId('appSubtitle').textContent=typeof DATA.settings.subtitle==='string'?DATA.settings.subtitle:'';
+      document.title=byId('appTitle').textContent;
+      updatePanel();updateCounter();renderChart();
+    }
+    function makeElement(tag,className,text) {
+      const node=document.createElement(tag);if(className)node.className=className;if(text!==undefined)node.textContent=text;return node;
+    }
+    function updatePanel() {
+      const content=byId('panelContent');content.replaceChildren();
+      const skill=allSkills.find(item=>item.id===state.selected);
+      byId('panelTitle').textContent=skill?skill.name:'Select a skill';
+      if(!skill) {
+        const p=makeElement('p','',allSkills.length?'Click any skill to see details, then click a ring (1-8) to set your proficiency level.':'No skills in this assessment. Load a skill file with Alt+O.');
+        p.style.cssText='color:#9ca3af;font-size:14px';content.append(p);return;
+      }
+      const tag=makeElement('span','tag '+skill.group,skill.group==='core'?'Hard Skill':'Soft Skill');
+      const description=makeElement('p','desc',skill.explanation);description.dir='auto';
+      const rating=state.marked[skill.id]||0;
+      const status=makeElement('div','status '+(rating?'marked':'unmarked'));
+      if(rating) {
+        status.style.cssText='display:flex;align-items:center;gap:10px';
+        const blocks=makeElement('div');blocks.style.cssText='display:flex;gap:2px';blocks.setAttribute('aria-hidden','true');
+        for(let level=1;level<=8;level++){
+          const block=makeElement('div');const color=level<=rating?(skill.group==='core'?'#7CB9A0':'#A8C8E8'):'#e5e7eb';
+          block.style.cssText='width:16px;height:16px;border-radius:3px;background:'+color;blocks.append(block);
+        }
+        status.append(blocks,makeElement('span','','Level '+rating));
+        status.title=DATA.levels[rating-1].title+': '+DATA.levels[rating-1].description;
+      } else status.textContent='Not yet assessed';
+      const hint=makeElement('p','',rating?'Click a different ring to change level, or click ring '+rating+' again to clear.':'Click any ring (1-8) to set your proficiency level for this skill.');
+      hint.style.cssText='font-size:12px;color:#6b7280;margin-top:8px';
+      content.append(tag,description,status,hint);
+    }
+    function updateCounter() {
+      const counter=byId('counter');counter.replaceChildren(document.createTextNode('Assessed: '),makeElement('strong','',String(Object.keys(state.marked).length)),document.createTextNode(' / '+allSkills.length));
+      byId('exportImage').disabled=!allSkills.length;
+    }
+    function constrainTitle() {
+      const title=byId('appTitle');title.classList.remove('long-title');
+      const clipped=title.scrollWidth>title.parentElement.clientWidth;
+      title.classList.toggle('long-title',clipped);title.title=clipped?title.textContent+' — Reset skill selection':'Reset skill selection';
+    }
+    let pendingChartFocus=null;
+    function chartFocus(id,level=null,scroll=false) {
+      const element=Array.from(byId('chart').querySelectorAll('[data-skill-id]')).find(node=>node.dataset.skillId===id&&(level===null?!node.hasAttribute('data-level'):Number(node.dataset.level)===level));
+      if(element){element.focus({preventScroll:true});if(scroll)element.scrollIntoView({block:'nearest',inline:'nearest'});}
+    }
+    function renderChart() {
+      constrainTitle();
+      const svg=byId('chart'),active=document.activeElement;
+      const previous=pendingChartFocus||(svg.contains(active)&&active.hasAttribute('data-skill-id')?{id:active.dataset.skillId,level:active.hasAttribute('data-level')?Number(active.dataset.level):null}:null);
+      pendingChartFocus=null;
+      renderChartView(svg,allSkills,state.marked,state.selected,selectSkill,(id,level)=>setRating(id,level,true),chartKey);
+      svg.setAttribute('aria-describedby','chartInstructions');
+      svg.querySelectorAll('[data-level]').forEach(node=>{
+        const guide=DATA.levels[Number(node.dataset.level)-1];
+        node.setAttribute('aria-label',node.getAttribute('aria-label')+'; '+guide.title+'; '+guide.description);
+      });
+      const wrap=document.querySelector('.chart-wrap');const dense=svg.dataset.chartDense==='true';
+      document.querySelector('.main').classList.toggle('is-dense',dense);
+      const mobile=matchMedia('(max-width: 900px)').matches;
+      const logical=Number(svg.dataset.chartWidth)||1000;
+      const size=dense?logical:mobile?1000:Math.max(300,Math.min(wrap.clientHeight-60,wrap.clientWidth-320,900));
+      svg.setAttribute('width',size);svg.setAttribute('height',dense?Number(svg.dataset.chartHeight):size);
+      if(previous)chartFocus(previous.id,previous.level);
+    }
+    function selectSkill(id) {
+      if(!allSkills.some(skill=>skill.id===id))return;state.selected=id;updatePanel();renderChart();
+      const skill=allSkills.find(skill=>skill.id===id);setNotice(skill.name+'. '+(state.marked[id]?'Current rating '+state.marked[id]+' of 8.':'Not assessed.'));
+    }
+    function setRating(id,level,toggle=false) {
+      if(!allSkills.some(skill=>skill.id===id)||!Number.isInteger(level)||level<1||level>8)return;
+      state.selected=id;if(toggle&&state.marked[id]===level)delete state.marked[id];else state.marked[id]=level;
+      const saved=saveMarkedState();updatePanel();updateCounter();renderChart();
+      setNotice(saved?'Rating '+(state.marked[id]||'cleared')+' saved in this browser.':'This rating could not be saved in this browser. Shift-click Save to download a progress backup before closing.',saved?'success':'error');
+    }
+    function clearRating() {
+      if(state.selected===null)return;delete state.marked[state.selected];const saved=saveMarkedState();updatePanel();updateCounter();renderChart();
+      setNotice(saved?'Rating cleared and saved in this browser.':'Rating cleared on this page, but saved progress could not be updated. Shift-click Save to download a backup.',saved?'success':'error');
+    }
+    function resetSelection() {state.selected=null;updatePanel();renderChart();setNotice('Skill selection cleared.');}
+    function clearAll() {
+      if(!confirm('Clear all assessed levels?'))return;
+      state.marked=Object.create(null);state.selected=null;const saved=saveMarkedState();updatePanel();updateCounter();renderChart();
+      setNotice(saved?'All ratings cleared in this browser.':'Ratings cleared on this page, but saved progress could not be updated. Old ratings may return after a reload.',saved?'success':'error');
+    }
+    function saveData() {
+      const saved=saveMarkedState();const message=saved?'Progress saved! '+Object.keys(state.marked).length+' skills assessed.\n\nYour data is stored in this browser. Shift-click Save to download a portable backup.':'Progress could not be saved in this browser. Your ratings are still on this page. Shift-click Save to download a backup before closing.';
+      setNotice(message,saved?'success':'error');alert(message);
+    }
+    function chartKey(event,id,level) {
+      if(event.altKey||event.ctrlKey||event.metaKey)return;
+      const key=event.key;
+      if(key==='Enter'||key===' ') {event.preventDefault();if(level===null)selectSkill(id);else setRating(id,level,true);return;}
+      if(/^[1-8]$/.test(key)){event.preventDefault();setRating(id,Number(key));return;}
+      if(key==='Delete'||key==='Backspace'){event.preventDefault();state.selected=id;clearRating();return;}
+      if(key==='Escape'){event.preventDefault();resetSelection();chartFocus(id);return;}
+      if(!['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(key))return;
+      event.preventDefault();
+      if(level===null&&(key==='ArrowLeft'||key==='ArrowRight'||key==='Home'||key==='End')) {
+        let index=allSkills.findIndex(skill=>skill.id===id);
+        index=key==='Home'?0:key==='End'?allSkills.length-1:(index+(key==='ArrowRight'?1:-1)+allSkills.length)%allSkills.length;
+        const next=allSkills[index];pendingChartFocus={id:next.id,level:null};selectSkill(next.id);chartFocus(next.id,null,true);
+      } else {
+        const next=level===null?(state.marked[id]||1):key==='Home'?1:key==='End'?8:Math.max(1,Math.min(8,level+(['ArrowRight','ArrowUp'].includes(key)?1:-1)));
+        pendingChartFocus={id,level:next};if(level===null)selectSkill(id);else setRating(id,next);chartFocus(id,next,true);
+      }
+    }
+    function wireActions() {
+      byId('exportCSV').addEventListener('click',exportCSV);
+      byId('exportImage').addEventListener('click',event=>event.shiftKey?exportSVG():exportImage());
+      byId('saveProgress').addEventListener('click',event=>event.shiftKey?exportProgress():saveData());
+      byId('clearAll').addEventListener('click',clearAll);byId('fullscreen').addEventListener('click',toggleFullscreen);byId('appTitle').addEventListener('click',resetSelection);
+      byId('skillsFile').addEventListener('change',event=>{if(event.target.files[0])importSkills(event.target.files[0]);event.target.value='';});
+      byId('progressFile').addEventListener('change',event=>{if(event.target.files[0])importProgress(event.target.files[0]);event.target.value='';});
+      document.addEventListener('keydown',event=>{if(event.altKey&&!event.ctrlKey&&!event.metaKey){if(event.code==='KeyO'||event.key.toLowerCase()==='o'){event.preventDefault();byId('skillsFile').click();}else if(event.code==='KeyR'||event.key.toLowerCase()==='r'){event.preventDefault();byId('progressFile').click();}}});
+      window.addEventListener('resize',()=>{if(DATA)renderChart();});
+      document.addEventListener('fullscreenchange',()=>byId('fullscreen').setAttribute('aria-label',document.fullscreenElement?'Exit fullscreen':'Enter fullscreen'));
+    }
+
+/* Original radial presentation with keyboard access and safe image export. */
+(function () {
+  "use strict";
+  var NS = "http://www.w3.org/2000/svg";
+  var FONT = "system-ui, -apple-system, sans-serif";
+  var measureCanvas = document.createElement("canvas");
+  var measureContext = measureCanvas.getContext("2d");
+  var wrapCache = new Map();
+  var labelBoxCache = new Map();
+  var graphemes = typeof Intl !== "undefined" && Intl.Segmenter
+    ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+
+  function parts(value) {
+    return graphemes ? Array.from(graphemes.segment(value), function (part) { return part.segment; }) : Array.from(value);
+  }
+  function node(type, attrs, text) {
+    var element = document.createElementNS(NS, type);
+    Object.keys(attrs || {}).forEach(function (key) { element.setAttribute(key, String(attrs[key])); });
+    if (text !== undefined) element.textContent = String(text);
+    return element;
+  }
+  function append(parent, type, attrs, text) {
+    var element = node(type, attrs, text); parent.appendChild(element); return element;
+  }
+  function text(parent, x, y, value, size, extra) {
+    return append(parent, "text", Object.assign({ x: x, y: y, fill: "#172b3a", "font-family": FONT,
+      "font-size": size || 20, "font-weight": 400 }, extra || {}), value);
+  }
+  function wrap(value, width, size) {
+    var raw = String(value || "").replace(/\s+/g, " ").trim();
+    if (!raw) return [""];
+    var cacheKey = size + "\n" + width + "\n" + raw;
+    if (wrapCache.has(cacheKey)) return wrapCache.get(cacheKey);
+    if (measureContext) measureContext.font = "600 " + size + "px " + FONT;
+    function fits(line) { return measureContext ? measureContext.measureText(line).width <= width : parts(line).length * size * 0.7 <= width; }
+    var lines = [], current = "";
+    raw.split(" ").forEach(function (word) {
+      var next = current ? current + " " + word : word;
+      if (fits(next)) { current = next; return; }
+      if (current) { lines.push(current); current = ""; }
+      if (fits(word)) { current = word; return; }
+      parts(word).forEach(function (character) {
+        if (current && !fits(current + character)) { lines.push(current); current = ""; }
+        current += character;
+      });
+    });
+    if (current) lines.push(current);
+    if (wrapCache.size >= 1000) wrapCache.delete(wrapCache.keys().next().value);
+    wrapCache.set(cacheKey, lines);
+    return lines;
+  }
+  function lines(parent, x, y, values, size, lineHeight, attrs) {
+    values.forEach(function (line, index) { text(parent, x, y + index * lineHeight, line, size, attrs); });
+  }
+  function ratingOf(ratings, skill) {
+    var value = ratings[skill.id]; return Number.isInteger(value) && value >= 1 && value <= 8 ? value : 0;
+  }
+
+  function activate(element, skill, level, selected, onSelect, onRate, onKey) {
+    element.setAttribute("role", "button");
+    element.setAttribute("data-skill-id", skill.id);
+    element.setAttribute("aria-label", skill.name + "; " + (skill.group === "core" ? "hard skill" : "soft skill") +
+      (level === null ? "; select skill" : "; set proficiency level " + level + " of 8"));
+    element.setAttribute("aria-pressed", String(selected));
+    element.setAttribute("tabindex", level === null || selected ? "0" : "-1");
+    element.setAttribute("focusable", "true");
+    if (level !== null) element.setAttribute("data-level", level);
+    element.style.cursor = "pointer";
+    element.addEventListener("click", function (event) {
+      event.stopPropagation();
+      if (level === null && typeof onSelect === "function") onSelect(skill.id);
+      else if (level !== null && typeof onRate === "function") onRate(skill.id, level);
+    });
+    element.addEventListener("keydown", function (event) {
+      if (typeof onKey === "function") { onKey(event, skill.id, level); return; }
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault(); element.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+      }
+    });
+  }
+  function radialArc(cx, cy, start, end, inner, outer) {
+    var large = end - start > Math.PI ? 1 : 0;
+    return "M" + (cx + inner * Math.cos(start)) + " " + (cy + inner * Math.sin(start)) +
+      " A" + inner + " " + inner + " 0 " + large + " 1 " + (cx + inner * Math.cos(end)) + " " + (cy + inner * Math.sin(end)) +
+      " L" + (cx + outer * Math.cos(end)) + " " + (cy + outer * Math.sin(end)) +
+      " A" + outer + " " + outer + " 0 " + large + " 0 " + (cx + outer * Math.cos(start)) + " " + (cy + outer * Math.sin(start)) + " Z";
+  }
+  function labelLines(name, dense) {
+    var clean = String(name || "").replace(/\s+/g, " ").trim();
+    var words = clean.split(" ");
+    if (!dense && clean.length <= 70) return words.length <= 2 ? [clean] :
+      [words.slice(0, Math.ceil(words.length / 2)).join(" "), words.slice(Math.ceil(words.length / 2)).join(" ")];
+    var wrapped = wrap(clean, 220, 13), result = wrapped.slice(0, 2);
+    if (wrapped.length > 2) {
+      var end = parts(result[1]);
+      if (measureContext) measureContext.font = "600 13px " + FONT;
+      while (end.length && measureContext && measureContext.measureText(end.join("") + "…").width > 218) end.pop();
+      result[1] = end.join("") + "…";
+    }
+    return result;
+  }
+  window.renderChartView = function (svg, skills, ratings, selectedId, onSelect, onRate, onKey) {
+    svg.replaceChildren(); skills = Array.isArray(skills) ? skills : []; ratings = ratings || Object.create(null);
+    svg.removeAttribute("aria-hidden"); svg.setAttribute("role", "group");
+    svg.setAttribute("aria-label", "Skill assessment chart. Tab to a skill and press Enter to select. Use the selected skill's ring buttons to set level 1 to 8.");
+    svg.setAttribute("xmlns", NS); svg.setAttribute("font-family", FONT);
+    svg.setAttribute("data-chart-mode", "radial");
+    append(svg, "style", {}, ".chart-ring:focus-visible>path{stroke:#0f172a;stroke-width:4;opacity:1}.chart-label:focus-visible>.chart-focus-outline{opacity:1}.chart-ring:focus-visible,.chart-label:focus-visible{outline:none}");
+    var total = skills.length, dense = total > 32;
+    var outerR = Math.max(380, total * 7.2), innerR = outerR * 120 / 380;
+    var cx = outerR + 120, cy = cx, dimension = cx * 2;
+    if (!total) {
+      text(svg, 500, 500, "No skills in this assessment.", 16, { "text-anchor": "middle" });
+    } else {
+      var ordered = skills.filter(function (skill) { return skill.group === "core"; })
+        .concat(skills.filter(function (skill) { return skill.group !== "core"; }));
+      var coreCount = ordered.filter(function (skill) { return skill.group === "core"; }).length;
+      var supportCount = total - coreCount, sectionGap = 0.14;
+      var totalAngle = Math.PI * 2 - sectionGap * 2, step = totalAngle / total;
+      var gap = Math.min(0.025, step * 0.18), start = -Math.PI;
+      var angles = ordered.map(function (skill, index) {
+        var offset = index >= coreCount ? sectionGap : 0;
+        return { start: start + index * step + offset + gap / 2, end: start + (index + 1) * step + offset - gap / 2 };
+      });
+      if (coreCount) append(svg, "path", {
+        d: radialArc(cx, cy, angles[0].start - 0.03, angles[coreCount - 1].end + 0.03, innerR - 8, outerR + 8),
+        fill: "rgba(124,185,160,0.08)", stroke: "rgba(124,185,160,0.2)", "stroke-width": 1 });
+      if (supportCount) append(svg, "path", {
+        d: radialArc(cx, cy, angles[coreCount].start - 0.03, angles[total - 1].end + 0.03, innerR - 8, outerR + 8),
+        fill: "rgba(168,200,232,0.08)", stroke: "rgba(168,200,232,0.2)", "stroke-width": 1, "stroke-dasharray": "6 4" });
+      ordered.forEach(function (skill, index) {
+        var angle = angles[index], middle = (angle.start + angle.end) / 2;
+        var selected = skill.id === selectedId, rating = ratingOf(ratings, skill);
+        var base = skill.group === "core" ? "#d1e7dd" : "#dbeafe";
+        var marked = skill.group === "core" ? "#7CB9A0" : "#A8C8E8";
+        for (var ring = 0; ring < 8; ring++) {
+          var level = ring + 1, r0 = innerR + ring * (outerR - innerR) / 8, r1 = innerR + (ring + 1) * (outerR - innerR) / 8;
+          var assessed = rating >= level, group = append(svg, "g", { "class": "chart-ring" });
+          activate(group, skill, level, selected, onSelect, onRate, onKey);
+          group.setAttribute("aria-pressed", String(rating === level));
+          append(group, "title", {}, skill.name + "; level " + level + " of 8; current " + (rating || "not assessed"));
+          append(group, "path", { d: radialArc(cx, cy, angle.start, angle.end, r0, r1),
+            fill: assessed ? marked : base, stroke: selected ? "rgba(55,65,81,0.5)" : "#fff",
+            "stroke-width": selected ? 1.2 : 0.5, opacity: assessed ? 0.6 + ring / 8 * 0.4 : 0.35 });
+          if (selected) {
+            var radius = r0 + (r1 - r0) / 2;
+            text(group, cx + radius * Math.cos(middle), cy + radius * Math.sin(middle), level, 10,
+              { "text-anchor": "middle", "dominant-baseline": "middle", "font-weight": 600,
+                fill: assessed ? "#1f2937" : "#6b7280", "pointer-events": "none", "aria-hidden": "true" });
+          }
+        }
+        var labelRadius = outerR + 20, lx = cx + labelRadius * Math.cos(middle), ly = cy + labelRadius * Math.sin(middle);
+        var degrees = middle * 180 / Math.PI, right = degrees > -90 && degrees < 90;
+        var rotation = right ? degrees : degrees + 180, anchor = right ? "start" : "end";
+        var label = append(svg, "g", { "class": "chart-label", transform: "translate(" + lx + "," + ly + ") rotate(" + rotation + ")" });
+        activate(label, skill, null, selected, onSelect, onRate, onKey);
+        append(label, "title", {}, skill.name);
+        var display = labelLines(skill.name, dense);
+        display.forEach(function (line, lineIndex) {
+          text(label, 0, lineIndex * 16 - (display.length - 1) * 8, line, 13,
+            { "text-anchor": anchor, "dominant-baseline": "middle", "font-weight": selected || rating ? 600 : 500,
+              fill: selected ? "#1f2937" : rating ? "#374151" : "#6b7280", "font-style": skill.group === "supporting" ? "italic" : "normal", "aria-hidden": "true" });
+        });
+        var boxKey = JSON.stringify([display, selected || rating ? 600 : 500, skill.group === "supporting"]);
+        var box = labelBoxCache.get(boxKey);
+        if (!box) {
+          var measured = label.getBBox();
+          box = { x: measured.x, y: measured.y, width: measured.width, height: measured.height };
+          if (labelBoxCache.size >= 1000) labelBoxCache.delete(labelBoxCache.keys().next().value);
+          labelBoxCache.set(boxKey, box);
+        }
+        var outline = node("rect", { "class": "chart-focus-outline", x: box.x - 4, y: box.y - 4,
+          width: box.width + 8, height: box.height + 8, rx: 3, fill: "none", stroke: "#0f172a", "stroke-width": 2,
+          opacity: 0, "pointer-events": "none", "aria-hidden": "true" });
+        label.insertBefore(outline, label.firstChild);
+      });
+      append(svg, "circle", { cx: cx, cy: cy, r: innerR - 10, fill: "#2d4a5e", stroke: "#1f3544", "stroke-width": 3 });
+      ["CX", "DESIGNER"].forEach(function (line, index) {
+        text(svg, cx, cy - 10 + index * 24, line, 16, { "text-anchor": "middle", fill: "#fff", "font-weight": 700,
+          "letter-spacing": 2, "aria-hidden": "true" });
+      });
+      text(svg, 15, 20, "HARD SKILLS", 13, { "text-anchor": "start", fill: "#047857", "font-weight": 700, "letter-spacing": 2 });
+      text(svg, dimension - 15, dimension - 15, "SOFT SKILLS", 13,
+        { "text-anchor": "end", fill: "#1d4ed8", "font-weight": 600, "font-style": "italic", "letter-spacing": 2 });
+    }
+    var boxX = 0, boxY = 0, width = dimension, height = dimension;
+    if (dense) {
+      var bbox = svg.getBBox(); boxX = Math.min(0, bbox.x - 14); boxY = Math.min(0, bbox.y - 14);
+      width = Math.max(dimension, bbox.x + bbox.width + 14) - boxX;
+      height = Math.max(dimension, bbox.y + bbox.height + 14) - boxY;
+    }
+    svg.setAttribute("viewBox", boxX + " " + boxY + " " + width + " " + height);
+    svg.setAttribute("width", width); svg.setAttribute("height", height);
+    svg.setAttribute("data-chart-width", width); svg.setAttribute("data-chart-height", height);
+    svg.setAttribute("data-chart-dense", String(dense)); svg.style.overflow = "visible";
+  };
+  function exportSVG(svg, title) {
+    var viewBox = svg.viewBox && svg.viewBox.baseVal;
+    if (!viewBox || !Number.isFinite(viewBox.width) || !Number.isFinite(viewBox.height) || viewBox.width <= 0 || viewBox.height <= 0) {
+      throw new Error("The chart is not ready to export.");
+    }
+    var bbox = svg.getBBox();
+    var originX = Math.min(viewBox.x, bbox.x - 14), originY = Math.min(viewBox.y, bbox.y - 14);
+    var width = Math.max(viewBox.x + viewBox.width, bbox.x + bbox.width + 14) - originX;
+    var chartHeight = Math.max(viewBox.y + viewBox.height, bbox.y + bbox.height + 14) - originY;
+    var titleLines = wrap(String(title || "Skill assessment"), width - 72, 27);
+    var header = titleLines.length * 35 + 75, height = chartHeight + header;
+    var result = node("svg", { xmlns: NS, width: width, height: height, viewBox: "0 0 " + width + " " + height,
+      "font-family": FONT });
+    append(result, "rect", { width: width, height: height, fill: "#f8fafc" });
+    lines(result, 36, 42, titleLines, 27, 35, { "font-weight": 700 });
+    var today = new Date();
+    var date = today.getFullYear() + "-" + String(today.getMonth() + 1).padStart(2, "0") + "-" + String(today.getDate()).padStart(2, "0");
+    text(result, 36, titleLines.length * 35 + 40, "Exported " + date + " · Skill levels 1–8", 19);
+    append(result, "line", { x1: 36, x2: width - 36, y1: header - 10, y2: header - 10, stroke: "#cbd5e1" });
+    var content = append(result, "g", { transform: "translate(" + (-originX) + " " + (header - originY) + ")" });
+    Array.from(svg.childNodes).forEach(function (child) { content.appendChild(child.cloneNode(true)); });
+    return { element: result, width: width, height: height };
+  }
+
+  window.chartSVGBlob = function (svg, title) {
+    var result = exportSVG(svg, title);
+    return new Blob([new XMLSerializer().serializeToString(result.element)], { type: "image/svg+xml;charset=utf-8" });
+  };
+
+  window.chartPNGBlob = async function (svg, title) {
+    var result = exportSVG(svg, title), maxPixels = 16000000, maxAxis = 16384;
+    var scale = Math.min(2, maxAxis / result.width, maxAxis / result.height, Math.sqrt(maxPixels / (result.width * result.height)));
+    var pixelWidth = Math.max(1, Math.floor(result.width * scale)), pixelHeight = Math.max(1, Math.floor(result.height * scale));
+    // Bound both the SVG image decoder and canvas allocations; retain the logical viewBox.
+    result.element.setAttribute("width", pixelWidth); result.element.setAttribute("height", pixelHeight);
+    var blob = new Blob([new XMLSerializer().serializeToString(result.element)], { type: "image/svg+xml;charset=utf-8" });
+    var url = URL.createObjectURL(blob), canvas;
+    try {
+      var img = await new Promise(function (resolve, reject) {
+        var image = new Image();
+        var timer = setTimeout(function () { image.onload = image.onerror = null; image.src = ""; reject(new Error("Image export took too long. Try the SVG or CSV export.")); }, 20000);
+        image.onload = function () { clearTimeout(timer); resolve(image); };
+        image.onerror = function () { clearTimeout(timer); reject(new Error("The chart could not be rendered as an image.")); };
+        image.src = url;
+      });
+      canvas = document.createElement("canvas"); canvas.width = pixelWidth; canvas.height = pixelHeight;
+      var context = canvas.getContext("2d");
+      if (!context) throw new Error("Image export is unavailable in this browser. Try the SVG or CSV export.");
+      context.fillStyle = "#f8fafc"; context.fillRect(0, 0, pixelWidth, pixelHeight); context.drawImage(img, 0, 0, pixelWidth, pixelHeight);
+      var png = await new Promise(function (resolve, reject) {
+        try { canvas.toBlob(function (imageBlob) { if (imageBlob) resolve(imageBlob); else reject(new Error("Image export failed. Try the SVG or CSV export.")); }, "image/png"); }
+        catch (error) { reject(error); }
+      });
+      return png;
+    } finally {
+      URL.revokeObjectURL(url);
+      if (canvas) { canvas.width = 0; canvas.height = 0; }
+    }
+  };
+})();
+
+init();
+</script></body></html>

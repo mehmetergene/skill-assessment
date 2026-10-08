@@ -1,168 +1,36 @@
 {
-  "_meta": {
-    "modified": "2026-10-02",
-    "notice": "Modified from Skill Assessment (V2): added stable skill IDs and a suggested observable self-assessment rubric. Original skill names and explanations retained."
-  },
   "settings": {
     "title": "CX Designer Skill Matrix",
     "subtitle": "Mark your proficiency level (1-8) for each skill"
   },
+
   "skills": {
     "core": [
-      {
-        "name": "Customer journey mapping",
-        "explanation": "Creating end-to-end visualizations of customer experiences across all touchpoints, channels, and stages of the relationship.",
-        "id": "customer-journey-mapping"
-      },
-      {
-        "name": "Voice of Customer programs",
-        "explanation": "Designing and managing systematic approaches to capture, analyze, and act on customer feedback and insights.",
-        "id": "voice-of-customer-programs"
-      },
-      {
-        "name": "CX metrics & measurement",
-        "explanation": "Defining and tracking key experience indicators like NPS, CSAT, CES, and linking them to business outcomes.",
-        "id": "cx-metrics-measurement"
-      },
-      {
-        "name": "Touchpoint analysis",
-        "explanation": "Evaluating individual interaction points to identify friction, opportunities, and moments that matter most to customers.",
-        "id": "touchpoint-analysis"
-      },
-      {
-        "name": "Experience mapping",
-        "explanation": "Visualizing the holistic customer experience including emotions, expectations, and perceptions at each stage.",
-        "id": "experience-mapping"
-      },
-      {
-        "name": "Customer research methods",
-        "explanation": "Planning and conducting qualitative and quantitative research to understand customer needs, behaviors, and pain points.",
-        "id": "customer-research-methods"
-      },
-      {
-        "name": "Data analysis & insights",
-        "explanation": "Interpreting customer data from multiple sources to identify patterns, trends, and actionable opportunities.",
-        "id": "data-analysis-insights"
-      },
-      {
-        "name": "Persona development",
-        "explanation": "Creating evidence-based customer archetypes that represent key segments and guide experience design decisions.",
-        "id": "persona-development"
-      },
-      {
-        "name": "Service recovery design",
-        "explanation": "Designing processes and experiences to effectively handle failures and turn detractors into promoters.",
-        "id": "service-recovery-design"
-      },
-      {
-        "name": "Omnichannel experience design",
-        "explanation": "Creating seamless, consistent experiences across all channels (digital, physical, human) throughout the customer lifecycle.",
-        "id": "omnichannel-experience-design"
-      },
-      {
-        "name": "CX strategy development",
-        "explanation": "Defining the vision, priorities, and roadmap for customer experience aligned with business objectives.",
-        "id": "cx-strategy-development"
-      },
-      {
-        "name": "Feedback loop design",
-        "explanation": "Creating systems to continuously capture customer input and close the loop with improvements and communication.",
-        "id": "feedback-loop-design"
-      }
+      { "name": "Customer journey mapping", "explanation": "Creating end-to-end visualizations of customer experiences across all touchpoints, channels, and stages of the relationship." },
+      { "name": "Voice of Customer programs", "explanation": "Designing and managing systematic approaches to capture, analyze, and act on customer feedback and insights." },
+      { "name": "CX metrics & measurement", "explanation": "Defining and tracking key experience indicators like NPS, CSAT, CES, and linking them to business outcomes." },
+      { "name": "Touchpoint analysis", "explanation": "Evaluating individual interaction points to identify friction, opportunities, and moments that matter most to customers." },
+      { "name": "Experience mapping", "explanation": "Visualizing the holistic customer experience including emotions, expectations, and perceptions at each stage." },
+      { "name": "Customer research methods", "explanation": "Planning and conducting qualitative and quantitative research to understand customer needs, behaviors, and pain points." },
+      { "name": "Data analysis & insights", "explanation": "Interpreting customer data from multiple sources to identify patterns, trends, and actionable opportunities." },
+      { "name": "Persona development", "explanation": "Creating evidence-based customer archetypes that represent key segments and guide experience design decisions." },
+      { "name": "Service recovery design", "explanation": "Designing processes and experiences to effectively handle failures and turn detractors into promoters." },
+      { "name": "Omnichannel experience design", "explanation": "Creating seamless, consistent experiences across all channels (digital, physical, human) throughout the customer lifecycle." },
+      { "name": "CX strategy development", "explanation": "Defining the vision, priorities, and roadmap for customer experience aligned with business objectives." },
+      { "name": "Feedback loop design", "explanation": "Creating systems to continuously capture customer input and close the loop with improvements and communication." }
     ],
+
     "supporting": [
-      {
-        "name": "Stakeholder management",
-        "explanation": "Building relationships and managing expectations with executives, teams, and partners across the organization.",
-        "id": "stakeholder-management"
-      },
-      {
-        "name": "Cross-functional collaboration",
-        "explanation": "Working effectively with marketing, sales, operations, IT, and other teams to deliver unified customer experiences.",
-        "id": "cross-functional-collaboration"
-      },
-      {
-        "name": "Strategic thinking",
-        "explanation": "Connecting CX initiatives to business strategy and demonstrating ROI of experience improvements.",
-        "id": "strategic-thinking"
-      },
-      {
-        "name": "Storytelling & presentation",
-        "explanation": "Communicating customer insights and CX vision compellingly to inspire action and secure buy-in.",
-        "id": "storytelling-presentation"
-      },
-      {
-        "name": "Empathy",
-        "explanation": "Deeply understanding and advocating for customer perspectives, emotions, and unmet needs.",
-        "id": "empathy"
-      },
-      {
-        "name": "Change management",
-        "explanation": "Guiding organizations through CX transformation, addressing resistance, and building customer-centric culture.",
-        "id": "change-management"
-      },
-      {
-        "name": "Influencing & persuasion",
-        "explanation": "Driving CX priorities and decisions without direct authority across siloed organizations.",
-        "id": "influencing-persuasion"
-      },
-      {
-        "name": "Business acumen",
-        "explanation": "Understanding business models, P&L impact, and translating CX improvements into financial outcomes.",
-        "id": "business-acumen"
-      },
-      {
-        "name": "Problem solving",
-        "explanation": "Identifying root causes of experience issues and developing creative, feasible solutions.",
-        "id": "problem-solving"
-      },
-      {
-        "name": "Customer advocacy",
-        "explanation": "Championing the customer perspective in organizational decisions and balancing it with business constraints.",
-        "id": "customer-advocacy"
-      }
+      { "name": "Stakeholder management", "explanation": "Building relationships and managing expectations with executives, teams, and partners across the organization." },
+      { "name": "Cross-functional collaboration", "explanation": "Working effectively with marketing, sales, operations, IT, and other teams to deliver unified customer experiences." },
+      { "name": "Strategic thinking", "explanation": "Connecting CX initiatives to business strategy and demonstrating ROI of experience improvements." },
+      { "name": "Storytelling & presentation", "explanation": "Communicating customer insights and CX vision compellingly to inspire action and secure buy-in." },
+      { "name": "Empathy", "explanation": "Deeply understanding and advocating for customer perspectives, emotions, and unmet needs." },
+      { "name": "Change management", "explanation": "Guiding organizations through CX transformation, addressing resistance, and building customer-centric culture." },
+      { "name": "Influencing & persuasion", "explanation": "Driving CX priorities and decisions without direct authority across siloed organizations." },
+      { "name": "Business acumen", "explanation": "Understanding business models, P&L impact, and translating CX improvements into financial outcomes." },
+      { "name": "Problem solving", "explanation": "Identifying root causes of experience issues and developing creative, feasible solutions." },
+      { "name": "Customer advocacy", "explanation": "Championing the customer perspective in organizational decisions and balancing it with business constraints." }
     ]
-  },
-  "levels": [
-    {
-      "level": 1,
-      "title": "Awareness",
-      "description": "I can explain the basic terms and purpose of this skill and recognize an example. I need step-by-step help to apply it."
-    },
-    {
-      "level": 2,
-      "title": "Guided practice",
-      "description": "I can complete a small, clearly defined task using a template and regular guidance, and explain what I did."
-    },
-    {
-      "level": 3,
-      "title": "Basic independence",
-      "description": "I can complete routine tasks independently in a familiar context, show an example of my work, and identify when I need help."
-    },
-    {
-      "level": 4,
-      "title": "Reliable practice",
-      "description": "I can deliver this work consistently in varied situations, explain my choices, and use feedback or evidence to improve the result."
-    },
-    {
-      "level": 5,
-      "title": "Advanced application",
-      "description": "I can adapt the approach to complex or ambiguous problems, evaluate alternatives, and demonstrate the effect of my work with evidence."
-    },
-    {
-      "level": 6,
-      "title": "Coaching others",
-      "description": "I can review and coach others in this skill, improve team practices, and show how those improvements helped people deliver better work."
-    },
-    {
-      "level": 7,
-      "title": "Organizational leadership",
-      "description": "I can establish approaches across teams, align stakeholders, and demonstrate sustained improvements in customer experience or business outcomes."
-    },
-    {
-      "level": 8,
-      "title": "Practice leadership",
-      "description": "I can develop and validate new approaches, share them beyond my own team, and show evidence that others adopted them and achieved useful results."
-    }
-  ]
+  }
 }
